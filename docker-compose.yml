@@ -1,0 +1,41 @@
+#Owner::ANIKET::ANHOTRA = MR.Panda
+# Starts the database and backend for local work. The frontend and worker services are
+# added in the phases that create them. Secrets come from your .env file, never from here.
+services:
+  database:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: sitepay
+      POSTGRES_USER: sitepay
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - database_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sitepay -d sitepay"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: python:3.12-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    environment:
+      APPLICATION_ENVIRONMENT: development
+      DATABASE_URL: postgresql+psycopg://sitepay:${POSTGRES_PASSWORD}@database:5432/sitepay
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
+      FEATURE_FLAGS: ${FEATURE_FLAGS:-}
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "pip install --no-cache-dir -e . &&
+             cd backend &&
+             alembic upgrade head &&
+             uvicorn app.main:create_app --factory --host 0.0.0.0 --port 8000"
+
+volumes:
+  database_data:

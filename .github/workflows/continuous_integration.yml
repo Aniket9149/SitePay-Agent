@@ -1,0 +1,25 @@
+#Owner::ANIKET::ANHOTRA = MR.Panda
+# Runs the rule checker, lint and every test on each push and pull request.
+# The AI regression gate is added in Phase 3 as its own workflow.
+name: continuous-integration
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+      - name: Project rules (owner tag, em dash, file length)
+        run: python scripts/check_project_rules.py .
+      - name: Lint
+        run: ruff check .
+      - name: Tests
+        run: python -m pytest tests backend/tests -rs
