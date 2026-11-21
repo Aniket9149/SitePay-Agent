@@ -4,17 +4,16 @@ Written 2026-11-20. Read this first when resuming.
 
 ## State in one paragraph
 
-Phase 0 and Phase 1 are fully written (94 files). 211 tests pass here. The 12 integration tests need FastAPI, SQLAlchemy and httpx
-and have never run, so the Phase 1 exit check is **not met**. The work is not on GitHub.
+Phase 0 and Phase 1 are fully written (99 files), plus login and registration rate limiting. 249 tests pass here. The 15 integration tests need FastAPI,
+SQLAlchemy and httpx and have never run, so the Phase 1 exit check is **not met**. The work is on GitHub, branch `sp-01/architect-foundation`.
 
 ## Resume here, in this order
 
-1. **Get the code safe.** Preferred: owner creates `Aniket9149/SitePay-Agent` and grants the session access, then push branch
-   `sp-01/architect-foundation` (never to `main`, never force). Fallback: upload from the ZIP using `docs/GIT_UPLOAD_INSTRUCTIONS.md`.
+1. **Keep pushing** to branch `sp-01/architect-foundation` after each batch (never to `main`, never force). The repository had no `main` when first pushed, so GitHub made this branch the default. Create `main` deliberately, through the owner, when merging.
 2. **Run the integration tests** in any environment that can install `pip install -e ".[dev]"`. Fix what they find. Watch the savepoint
    risk listed in `DEVELOPMENT_TRACKER.md`. Then run `alembic upgrade head` and `downgrade base`, and `ruff check .`.
-3. **Then continue building** in this order: rate limiting and lockout for login, adopt the paging envelope in the list routes,
-   organisation invitations, password reset behind its flag, the `docs/` data and security updates that follow.
+3. **Then continue building** in this order: adopt the paging envelope in the list routes, organisation invitations, password reset behind its flag,
+   a shared store for rate limits (database or Redis) so limits hold across several server processes.
 
 ## Do NOT repeat
 

@@ -19,7 +19,7 @@ checked only. It has never been executed.
 ## Phase 1 files by status (roadmap order numbers)
 
 **Tested** (executed, passing, in `TEST_RECORDS.md`):
-22 `app/__init__`, 23 `config`, 25 `errors`, 38 `auth_schema`, 39 `project_schema`, 54 `logging_setup`, 60 `feature_flags`.
+22 `app/__init__`, 23 `config`, 25 `errors`, plus rate limiting (`attempt_tracker`, `login_throttle`, `client_address`), 38 `auth_schema`, 39 `project_schema`, 54 `logging_setup`, 60 `feature_flags`.
 
 **Implemented, not executed** (compiled and structure checked only):
 24 `database`, 26 `dependencies`, 27 `main`, 28 to 34 and 55 models, 35 `migrations/env`, 36 migration `0001`, 37 and 40 and 43 package files,
@@ -40,9 +40,9 @@ checked only. It has never been executed.
 
 ## Numbers (2026-11-20)
 
-- 94 files in the workspace. 5,665 lines of Python including tests. Longest code file 267 lines (limit 300).
-- Last full run: **211 passed, 2 skipped modules**, rule checker 0 violations on 94 files.
-- The 2 skipped modules hold **12 integration tests that have never run**. Skipped is not passed.
+- 99 files in the workspace. 6,411 lines of Python including tests. Longest code file 270 lines (limit 300).
+- Last full run: **249 passed, 2 skipped modules**, rule checker 0 violations on 99 files.
+- The 2 skipped modules hold **15 integration tests that have never run**. Skipped is not passed.
 
 ## Known risks to check first when FastAPI and SQLAlchemy are available
 
@@ -51,17 +51,18 @@ checked only. It has never been executed.
 2. PostgreSQL audit trigger SQL has never been executed.
 3. The migration has never been run, up or down, on any database.
 4. `ruff` lint has never been run on this code.
-5. Response model validation of Decimal fields in `ProjectResponse` is unverified. The integration test accepts either text or number for the value.
+5. Rate limiting is wired into the login and registration routes but those routes have never run. Three integration tests cover it (15 integration tests in total).
+6. Response model validation of Decimal fields in `ProjectResponse` is unverified. The integration test accepts either text or number for the value.
 
 ## Blockers
 
 - No FastAPI, SQLAlchemy, Alembic, httpx or ruff here, and installs are blocked (D-003).
-- GitHub repository `Aniket9149/SitePay-Agent` is not visible to this session (D-007).
+- GitHub: resolved. Branch `sp-01/architect-foundation` is pushed and verified. See `SP01_TRACKER.md`.
 - Phase 0 validation gate needs real interviews and documents from the owner.
 
 ## Next actions
 
 1. Owner: create the repository `Aniket9149/SitePay-Agent` (empty is fine) and grant this session access, or upload the ZIP. Instructions in `docs/GIT_UPLOAD_INSTRUCTIONS.md`.
-2. Environment with dependencies: run the full suite and fix whatever the 12 integration tests find. This is the Phase 1 exit check.
-3. SP-01: adopt the paging envelope in list routes, add rate limiting, then invitations and password reset.
+2. Environment with dependencies: run the full suite and fix whatever the 15 integration tests find. This is the Phase 1 exit check.
+3. SP-01: adopt the paging envelope in list routes, then organisation invitations and password reset. Login and registration rate limiting is done (in memory only, see `08_security_privacy.md`).
 4. Owner: gate evidence, and decide who may approve claims in a small company.

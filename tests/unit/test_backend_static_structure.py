@@ -20,7 +20,8 @@ COMMON_COLUMNS = {"id", "created_at", "updated_at"}
 FRAMEWORK_FREE_MODULES = [
     "errors.py", "config.py", "logging_setup.py", "feature_flags.py", "database_triggers.py",
     "security/password_hasher.py", "security/token_service.py", "security/permissions.py",
-    "security/audit_hash.py", "schemas/auth_schema.py", "schemas/organization_schema.py",
+    "security/audit_hash.py", "security/attempt_tracker.py", "security/login_throttle.py",
+    "security/client_address.py", "schemas/auth_schema.py", "schemas/organization_schema.py",
     "schemas/project_schema.py", "contracts/__init__.py", "contracts/entity_references.py",
     "contracts/review_states.py", "contracts/audit_actions.py",
     "contracts/quantities_and_money.py", "contracts/pagination.py",

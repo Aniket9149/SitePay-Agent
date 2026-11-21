@@ -11,7 +11,15 @@ from fastapi import APIRouter, Depends, Response
 from sqlalchemy.orm import Session
 
 from app.config import Settings
-from app.dependencies import get_application_settings, get_current_user, get_database_session
+from app.dependencies import (
+    get_application_settings,
+    get_client_address,
+    get_current_user,
+    get_database_session,
+    get_login_throttle,
+    get_registration_throttle,
+)
+from app.errors import AuthenticationError
 from app.models.base_model import current_utc_time
 from app.models.user_model import User
 from app.schemas.auth_schema import (
@@ -24,6 +32,7 @@ from app.schemas.auth_schema import (
     TokenPair,
     UserResponse,
 )
+from app.security.login_throttle import LoginThrottle, RegistrationThrottle
 from app.services import auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -48,11 +57,14 @@ def register(
     payload: RegisterRequest,
     session: Session = Depends(get_database_session),
     settings: Settings = Depends(get_application_settings),
+    throttle: RegistrationThrottle = Depends(get_registration_throttle),
+    client_address: str = Depends(get_client_address),
 ) -> RegistrationResponse:
     """Create an account with its first organisation and return tokens.
 
-    The new user becomes the organisation's owner.
+    The new user becomes the organisation's owner. Each address may register only a few per hour.
     """
+    throttle.register_attempt(client_address)
     result = auth_service.register_user_with_organization(session, payload, settings)
     session.commit()
     return RegistrationResponse(
@@ -70,12 +82,20 @@ def login(
     payload: LoginRequest,
     session: Session = Depends(get_database_session),
     settings: Settings = Depends(get_application_settings),
+    throttle: LoginThrottle = Depends(get_login_throttle),
+    client_address: str = Depends(get_client_address),
 ) -> TokenPair:
     """Check the email and password and return a token pair.
 
-    Every failure returns the same generic message.
+    Every failure returns the same generic message. Too many failures lock the login for a while.
     """
-    _user, tokens = auth_service.login_user(session, payload, settings)
+    throttle.ensure_allowed(payload.email, client_address)
+    try:
+        _user, tokens = auth_service.login_user(session, payload, settings)
+    except AuthenticationError:
+        throttle.register_failure(payload.email, client_address)
+        raise
+    throttle.register_success(payload.email, client_address)
     session.commit()
     return tokens
 

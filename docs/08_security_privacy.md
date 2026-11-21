@@ -10,6 +10,7 @@ were **tested by running tests**, and gaps. Nothing is claimed as verified unles
 | Passwords | scrypt (cost 32768), random salt, constant time compare, Unicode normalisation, rehash on weaker parameters, length limits, tampered hashes fail safely | Yes |
 | Unknown email timing | Dummy hash check so response time does not reveal which emails exist | Function runs. Timing equality not measured |
 | Login tokens | Signed tokens, algorithm fixed in code, required claims, access and refresh types cannot be swapped, "none" algorithm refused | Yes |
+| Rate limiting | Login locks for 15 minutes after 5 failures per email and address, and an address after 20 failures. 10 registrations per address per hour. Forwarded headers are ignored unless trusted proxies are configured | Logic tested with a fake clock. Route wiring **not run** |
 | Refresh tokens | Single use with rotation. Reusing an old token revokes all of that user's tokens | Logic written. **Not run** (needs database) |
 | Settings | Secret key must be 32+ characters and not a placeholder. Staging and production refuse SQLite | Yes |
 | Roles | Owner, manager, engineer, accounts, worker with a permission matrix. Last owner cannot be removed or demoted | Matrix tested. Routes **not run** |
@@ -24,7 +25,7 @@ were **tested by running tests**, and gaps. Nothing is claimed as verified unles
 
 ## Known gaps (not built, do not rely on them)
 
-- No rate limiting or account lockout. Login can be tried repeatedly. This is the most important gap.
+- Rate limiting is held in memory in each server process. With several processes the limits multiply, and guessing spread across many addresses is not stopped. A shared store (database or Redis) and alerting are planned. Behind a reverse proxy, `TRUSTED_PROXY_COUNT` must be set correctly or all users share one address.
 - No password reset or email verification (behind the `password_reset` feature flag, not built).
 - Anyone can register a new organisation. Invitations for people without accounts are not built.
 - Access tokens cannot be revoked before they expire (default 30 minutes). Refresh tokens can.

@@ -30,12 +30,18 @@ class Settings:
     refresh_token_lifetime_days: int
     feature_flags_raw: str
     log_level: str
+    login_max_failures: int
+    login_lockout_seconds: int
+    registration_max_per_hour: int
+    trusted_proxy_count: int
 
 
-def _read_positive_integer(source: Mapping[str, str], name: str, default: int) -> int:
-    """Read a positive whole number setting, using the default when unset.
+def _read_positive_integer(
+    source: Mapping[str, str], name: str, default: int, minimum: int = 1
+) -> int:
+    """Read a whole number setting of at least the minimum, using the default when unset.
 
-    Raises ConfigurationError for text that is not a positive integer.
+    Raises ConfigurationError for text that is not an integer or is below the minimum.
     """
     raw_value = source.get(name, "").strip()
     if raw_value == "":
@@ -44,8 +50,8 @@ def _read_positive_integer(source: Mapping[str, str], name: str, default: int) -
         parsed_value = int(raw_value)
     except ValueError as error:
         raise ConfigurationError(f"{name} must be a whole number.") from error
-    if parsed_value <= 0:
-        raise ConfigurationError(f"{name} must be greater than zero.")
+    if parsed_value < minimum:
+        raise ConfigurationError(f"{name} must be at least {minimum}.")
     return parsed_value
 
 
@@ -92,6 +98,14 @@ def load_settings(environment: Mapping[str, str] | None = None) -> Settings:
         ),
         feature_flags_raw=source.get("FEATURE_FLAGS", "").strip(),
         log_level=source.get("LOG_LEVEL", "INFO").strip().upper(),
+        login_max_failures=_read_positive_integer(source, "LOGIN_MAX_FAILURES", 5),
+        login_lockout_seconds=_read_positive_integer(source, "LOGIN_LOCKOUT_SECONDS", 900),
+        registration_max_per_hour=_read_positive_integer(
+            source, "REGISTRATION_MAX_PER_HOUR", 10
+        ),
+        trusted_proxy_count=_read_positive_integer(
+            source, "TRUSTED_PROXY_COUNT", 0, minimum=0
+        ),
     )
 
 

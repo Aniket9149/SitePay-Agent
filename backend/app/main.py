@@ -24,9 +24,10 @@ from app.api import (
 )
 from app.config import Settings, get_settings
 from app.database import build_engine, build_session_factory
-from app.errors import AuthenticationError, SitePayError
+from app.errors import AuthenticationError, RateLimitedError, SitePayError
 from app.feature_flags import FeatureFlags
 from app.logging_setup import configure_logging
+from app.security.login_throttle import LoginThrottle, RegistrationThrottle
 
 logger = logging.getLogger(__name__)
 API_PREFIX = "/api/v1"
@@ -50,7 +51,11 @@ def register_error_handlers(application: FastAPI) -> None:
 
         Failed logins also carry the standard Bearer challenge header.
         """
-        headers = {"WWW-Authenticate": "Bearer"} if isinstance(error, AuthenticationError) else None
+        headers: dict[str, str] | None = None
+        if isinstance(error, AuthenticationError):
+            headers = {"WWW-Authenticate": "Bearer"}
+        elif isinstance(error, RateLimitedError):
+            headers = {"Retry-After": str(error.retry_after_seconds)}
         return JSONResponse(
             status_code=error.status_code, content=error.to_response_body(), headers=headers
         )
@@ -88,6 +93,13 @@ def create_application(
     )
     application.state.settings = active_settings
     application.state.feature_flags = FeatureFlags.from_text(active_settings.feature_flags_raw)
+    application.state.login_throttle = LoginThrottle(
+        maximum_failures=active_settings.login_max_failures,
+        lockout_seconds=active_settings.login_lockout_seconds,
+    )
+    application.state.registration_throttle = RegistrationThrottle(
+        maximum_per_hour=active_settings.registration_max_per_hour
+    )
     application.state.session_factory = session_factory or build_session_factory(
         build_engine(active_settings.database_url)
     )

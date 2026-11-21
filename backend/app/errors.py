@@ -74,6 +74,27 @@ class ConflictError(SitePayError):
     error_code = "conflict"
 
 
+class RateLimitedError(SitePayError):
+    """Raised when someone has made too many attempts and must wait.
+
+    The message never says which limit was hit, so it does not help an attacker.
+    """
+
+    status_code = 429
+    error_code = "rate_limited"
+
+    def __init__(self, retry_after_seconds: int) -> None:
+        """Store how long the person must wait, in whole seconds, at least one.
+
+        The value is also sent in the Retry-After response header.
+        """
+        self.retry_after_seconds = max(1, int(retry_after_seconds))
+        super().__init__(
+            "Too many attempts. Please wait and try again.",
+            details={"retry_after_seconds": self.retry_after_seconds},
+        )
+
+
 class AuditLogImmutableError(SitePayError):
     """Raised when code tries to change or delete an audit log entry."""
 

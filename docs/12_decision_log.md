@@ -56,3 +56,14 @@ Every major decision, the options considered, and the reason. Newest at the bott
 ## D-010 (2026-11-20): Phase 1 documents written from the code as built
 
 - `05_data_model`, `08_security_privacy`, `09_testing_plan` and `26_environments_and_release_process` list known gaps and unrun parts openly. No thresholds were invented.
+
+## D-011 (2026-11-21): Rate limiting design and its limits
+
+- Decision: in memory counting with a memory cap. Login failures are counted per email and address together (5, lock 15 minutes) and per address alone (20). A good login clears only the pair, so an attacker with their own account cannot reset the address count. A locked key is refused even with the right password. Registration is limited to 10 per address per hour.
+- Why per pair and not per email alone: a per email lock would let anyone lock the real owner out.
+- Client address: `X-Forwarded-For` is ignored unless `TRUSTED_PROXY_COUNT` is set, then the entry counted from the right is used. Otherwise a client could fake the header to dodge the limit, or users behind one proxy would share one lockout.
+- Known limits, accepted for now: counts are per server process, and guessing spread over many addresses is not stopped. Needs a shared store and alerting before any pilot.
+
+## D-012 (2026-11-20): Branch `sp-01/architect-foundation` pushed to GitHub
+
+- The repository was empty, with no `main`, so GitHub made the pushed branch the default. `main` was not created or touched. Create it deliberately when the first reviewed merge happens.

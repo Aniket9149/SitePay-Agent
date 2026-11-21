@@ -128,3 +128,48 @@ def test_audit_chain_is_intact_and_immutable(client, session_factory) -> None:  
         with pytest.raises(DatabaseError, match="append only"):
             session.execute(text("DELETE FROM audit_logs"))
         session.rollback()
+
+
+def test_login_is_locked_after_repeated_failures_even_with_the_right_password(client) -> None:  # type: ignore[no-untyped-def]
+    """Five wrong passwords lock the login. Then even the correct password is refused."""
+    register_user(client, "owner@example.com")
+    wrong = {"email": "owner@example.com", "password": "wrong-password-1"}
+    for _ in range(5):
+        assert client.post("/api/v1/auth/login", json=wrong).status_code == 401
+    locked = client.post("/api/v1/auth/login", json=wrong)
+    assert locked.status_code == 429
+    assert int(locked.headers["retry-after"]) >= 1
+    assert locked.json()["error"]["code"] == "rate_limited"
+    correct = client.post(
+        "/api/v1/auth/login", json={"email": "owner@example.com", "password": "strongpass123"}
+    )
+    assert correct.status_code == 429
+
+
+def test_registration_is_limited_per_address(client) -> None:  # type: ignore[no-untyped-def]
+    """The eleventh registration from one address in an hour is refused."""
+    for number in range(10):
+        register_user(client, f"user{number}@example.com", f"Company {number}")
+    blocked = client.post(
+        "/api/v1/auth/register",
+        json={"email": "user11@example.com", "password": "strongpass123", "name": "X",
+              "organization_name": "Company 11"},
+    )
+    assert blocked.status_code == 429
+
+
+def test_a_faked_forwarded_header_does_not_dodge_the_limit(client) -> None:  # type: ignore[no-untyped-def]
+    """With no trusted proxy configured, X-Forwarded-For is ignored, so changing it changes nothing."""
+    register_user(client, "owner@example.com")
+    for number in range(5):
+        client.post(
+            "/api/v1/auth/login",
+            json={"email": "owner@example.com", "password": "wrong-password-1"},
+            headers={"X-Forwarded-For": f"10.0.0.{number}"},
+        )
+    response = client.post(
+        "/api/v1/auth/login",
+        json={"email": "owner@example.com", "password": "strongpass123"},
+        headers={"X-Forwarded-For": "10.9.9.9"},
+    )
+    assert response.status_code == 429

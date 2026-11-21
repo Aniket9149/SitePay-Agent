@@ -44,3 +44,17 @@ Result: `Scanned 90 files, found 0 violations.`
 
 Not run: the 12 integration tests, Alembic migration up and down, PostgreSQL trigger SQL, ruff, Docker Compose, the CI workflow.
 Static structure checks prove files compile and match the migration. They do not prove the code runs.
+
+## Run 3: 2026-11-21, rate limiting
+
+Environment: same as Run 2 (no FastAPI, SQLAlchemy, Alembic, httpx or ruff).
+
+Command: `python -m pytest tests backend/tests -rs`
+
+Result: **249 passed, 2 skipped** in 1.75s. Added 38 tests since Run 2: 33 rate limiting and client address tests, 5 compile checks for new files.
+
+Command: `python scripts/check_project_rules.py .`
+
+Result: `Scanned 99 files, found 0 violations.` An earlier run in the same session reported 1 violation (a test file of 315 lines, limit 300). It was fixed by splitting the file.
+
+Not run: the 15 integration tests (3 of them cover the rate limiting routes), and everything listed under Run 2.

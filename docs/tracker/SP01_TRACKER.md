@@ -19,17 +19,18 @@ Phase 1 foundation and shared contracts are written. Pure logic is tested. Datab
 - Shared contracts: record ownership map, typed references, review states with human-only approval, audit action namespaces,
   quantity and money shapes, paging envelope. Documented in `docs/interface_contracts/SP01_SHARED_CONTRACTS.md`.
 - Phase 1 documents 05, 08, 09, 26.
+- Login and registration rate limiting: lock after repeated failures per email and address, address wide limit, registration limit per address, trusted proxy handling for client addresses, 429 with Retry-After. In memory, per process.
 
 ## Tests executed (actual)
 
-`python -m pytest tests backend/tests`: 211 passed, 2 skipped modules (12 integration tests, need FastAPI/SQLAlchemy/httpx).
-`python scripts/check_project_rules.py .`: 0 violations, 94 files.
+`python -m pytest tests backend/tests`: 249 passed, 2 skipped modules (15 integration tests, need FastAPI/SQLAlchemy/httpx).
+`python scripts/check_project_rules.py .`: 0 violations, 99 files.
 Detail in `TEST_RECORDS.md`.
 
 ## Verified vs unverified
 
 - **Verified**: nothing (no phase exit check has been met).
-- **Tested**: config, errors, logging, feature flags, password hashing, tokens, permissions, audit hash chain, SQLite audit triggers, request formats, all shared contracts, rule checker.
+- **Tested**: rate limiting logic, config, errors, logging, feature flags, password hashing, tokens, permissions, audit hash chain, SQLite audit triggers, request formats, all shared contracts, rule checker.
 - **Statically checked only**: models, migration, services, routes, app assembly. 7 model tables match the migration column for column.
 - **Unverified**: everything that needs a database or web server. Docker Compose and CI have never run.
 
@@ -45,11 +46,10 @@ All are **proposals to other workstreams**, implemented in SP-01's code only.
 
 ## GitHub status
 
-- Target: `Aniket9149/SitePay-Agent`.
-- Checked 2026-11-20 with the session's authorised access: the repository was **not found or not accessible**. The accessible account lists only
-  `aniket_24`, `Aniket_249` and `Aniket9149`. Nothing was pushed anywhere. The token in the shell environment is invalid.
-- Local Git repository initialised in the workspace on branch `sp-01/architect-foundation`. Commits are local only.
-- Push status: **not pushed**. Next step is in `docs/GIT_UPLOAD_INSTRUCTIONS.md`.
+- Repository: `Aniket9149/SitePay-Agent` (public). It was empty when first pushed, so nothing was overwritten.
+- Branch `sp-01/architect-foundation` was pushed on 2026-11-20 with commits `af40196` and `ef4f5d3`. Verified: `git ls-remote`, the GitHub branches list and the GitHub commits list all showed `ef4f5d3`, and 94 files were in the remote tree.
+- Rate limiting work was committed and pushed afterwards. The current head is in the latest `git log`, see `SP01_EXECUTION_LOG.md` for the verification.
+- No `main` branch exists. Nothing was pushed to `main`. No force push was used.
 
 ## Next execution checkpoint
 

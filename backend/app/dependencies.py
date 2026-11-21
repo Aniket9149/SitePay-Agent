@@ -16,6 +16,8 @@ from app.errors import AuthenticationError, NotFoundError, PermissionDeniedError
 from app.feature_flags import FeatureFlags
 from app.models.membership_model import Membership
 from app.models.user_model import User
+from app.security.client_address import extract_client_address
+from app.security.login_throttle import LoginThrottle, RegistrationThrottle
 from app.security.permissions import Permission, Role, role_has_permission
 from app.security.token_service import ACCESS_TOKEN_TYPE, decode_token
 from app.services.auth_service import get_active_user
@@ -63,6 +65,37 @@ def get_feature_flags(request: Request) -> FeatureFlags:
     """
     flags: FeatureFlags = request.app.state.feature_flags
     return flags
+
+
+def get_login_throttle(request: Request) -> LoginThrottle:
+    """Return the login throttle stored on the running application.
+
+    One throttle is shared by all requests handled by this server process.
+    """
+    throttle: LoginThrottle = request.app.state.login_throttle
+    return throttle
+
+
+def get_registration_throttle(request: Request) -> RegistrationThrottle:
+    """Return the registration throttle stored on the running application.
+
+    One throttle is shared by all requests handled by this server process.
+    """
+    throttle: RegistrationThrottle = request.app.state.registration_throttle
+    return throttle
+
+
+def get_client_address(
+    request: Request, settings: Settings = Depends(get_application_settings)
+) -> str:
+    """Return the address attempts are counted against for this request.
+
+    Forwarded headers are believed only when trusted proxies are configured.
+    """
+    peer_host = request.client.host if request.client else None
+    return extract_client_address(
+        peer_host, request.headers.get("x-forwarded-for"), settings.trusted_proxy_count
+    )
 
 
 def get_database_session(request: Request) -> Iterator[Session]:

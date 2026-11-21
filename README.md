@@ -8,7 +8,7 @@ Owner: Aniket Anhotra (MR.Panda). Master plan: Roadmap Version 2.0 with Implemen
 
 ## Current status
 
-Phase 0 and Phase 1 are written. Pure logic is tested (211 tests pass). The database and web code has not been run yet, because the build environment lacks FastAPI and SQLAlchemy. The honest, always-current status of every file and phase is in
+Phase 0 and Phase 1 are written. Pure logic is tested (249 tests pass). The database and web code has not been run yet, because the build environment lacks FastAPI and SQLAlchemy. The honest, always-current status of every file and phase is in
 [`docs/tracker/DEVELOPMENT_TRACKER.md`](docs/tracker/DEVELOPMENT_TRACKER.md).
 
 The Product Validation Gate has **not** passed. It needs real interviews and documents that only the owner can collect. See [`docs/21_product_validation_gate.md`](docs/21_product_validation_gate.md).

@@ -23,6 +23,6 @@ Source: Roadmap Version 2.0, Part 24, plus risks found during the build. Impact 
 | Build sandbox cannot run the planned stack (D-003) | Untestable code | Do not mark untested code as tested, get packages installed or test on owner machine | **Active** |
 | Foundation built before scope freeze (D-002) | Rework | Keep Phase 1 generic, no scope expansion | **Active** |
 | Work exists only in the sandbox, not in GitHub (D-007) | Total loss of work | Checkpoint ZIPs, local Git repository, owner to create or share the repository | **Active** |
-| Phase 1 code never executed against a database (D-003) | Hidden defects, for example SQLite savepoint behaviour | Run the 12 integration tests first in a full environment | **Active** |
-| No login rate limiting yet | Password guessing | Add rate limiting and lockout before any pilot | **Active** |
+| Phase 1 code never executed against a database (D-003) | Hidden defects, for example SQLite savepoint behaviour | Run the 15 integration tests first in a full environment | **Active** |
+| Rate limiting is per process and per address (D-011) | Spread out guessing, limits multiply across workers, wrong proxy setting | Shared store and alerting before any pilot, set `TRUSTED_PROXY_COUNT` per deployment | **Active** |
 | Approval roles are a default, not a decision | Wrong people approve claims | Owner decides, then change request | **Active** |
