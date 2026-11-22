@@ -10,7 +10,7 @@ API conventions and cross-workstream contracts.
 
 ## Current status
 
-Phase 1 foundation and shared contracts are written. Pure logic is tested. Database and web code is written but never executed.
+Phase 1 backend executed in CI on commit `b3306cd` (Run 4 in `TEST_RECORDS.md`): 264 tests pass including all 15 integration tests, the real server smoke test passes, migrations pass up and down on SQLite and PostgreSQL 16. The Phase 1 executable exit checks listed in the 2026-11-22 session brief are met. Remaining gaps are listed under Verified vs unverified.
 
 ## Completed in this workstream so far
 
@@ -23,16 +23,17 @@ Phase 1 foundation and shared contracts are written. Pure logic is tested. Datab
 
 ## Tests executed (actual)
 
-`python -m pytest tests backend/tests`: 249 passed, 2 skipped modules (15 integration tests, need FastAPI/SQLAlchemy/httpx).
-`python scripts/check_project_rules.py .`: 0 violations, 99 files.
-Detail in `TEST_RECORDS.md`.
+CI run on `b3306cd` (GitHub Actions, Python 3.12.16): tests 264 passed, 0 skipped. Lint, rules, smoke test, migrations (SQLite and PostgreSQL 16) all passed.
+Local sandbox: 249 passed, 15 skipped (no FastAPI here). Detail in `TEST_RECORDS.md` Run 4.
 
 ## Verified vs unverified
 
-- **Verified**: nothing (no phase exit check has been met).
-- **Tested**: rate limiting logic, config, errors, logging, feature flags, password hashing, tokens, permissions, audit hash chain, SQLite audit triggers, request formats, all shared contracts, rule checker.
-- **Statically checked only**: models, migration, services, routes, app assembly. 7 model tables match the migration column for column.
-- **Unverified**: everything that needs a database or web server. Docker Compose and CI have never run.
+Terms: **tested** means a recorded run passed. **Verified** here means the Phase 1 exit check was run against real execution with evidence. It does not mean independently reviewed.
+
+- **Executed and passing (CI)**: startup through the factory, config loading, SQLite and PostgreSQL migrations up and down, audit log append-only triggers on both databases, register, login, `/auth/me`, refresh rotation and theft revocation, logout, validation errors (422), duplicate (409), consistent error bodies, tenant separation (404), roles, last owner protection, exact money in project responses, health routes, security headers, login lockout and registration limits including the faked X-Forwarded-For case, data surviving a server restart.
+- **SQLite savepoints**: the duplicate email, duplicate project and audit write tests pass on SQLite, and the smoke test passed on a SQLite file. The risk did not show up. Not proven under concurrent writers.
+- **Still unverified**: concurrent requests, several server processes (rate limits are in memory per process, a known limitation), Docker Compose, load, token expiry timing in real time, independent security review, other workstreams' integration (none seen).
+- **Not a defect but noted**: httpx deprecation warning from Starlette's test client.
 
 ## Dependencies on other agents
 

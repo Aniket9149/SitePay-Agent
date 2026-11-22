@@ -26,3 +26,15 @@ Not done: any run of database or web code, any push to GitHub, any integration w
 4. Rule checker found a test file over 300 lines. Split it into two files.
 5. Full run: 249 passed, 2 skipped modules (15 integration tests). Rule checker: 0 violations on 99 files.
 6. Updated the security document, risk register, trackers, checkpoint and test records.
+
+## Session 4: 2026-11-22 (implementation and verification, scope frozen)
+
+1. Restored the workspace from the checkpoint ZIP: clean tree at `38b40f2`. The sandbox still cannot install FastAPI or SQLAlchemy, so no install was retried. Used GitHub Actions as the executable environment.
+2. Read the CI log of `38b40f2`: ruff found 147 issues, and the single-job workflow stopped there, so the tests had never run.
+3. Fixed lint without changing pinned dependencies: ruff config for FastAPI `Depends`, line length, typing, import order. Two ruff autofixes and one `ruff format` pass reset the owner tag on 12 files; the tag was restored and the rule checker re-run (0 violations).
+4. Split CI into independent jobs (rules, lint, tests, smoke, migrations). Tests now fail instead of skipping when a package is missing (`SITEPAY_REQUIRE_FULL_STACK`). Added `scripts/smoke_test_backend.py` and `scripts/check_migrations.py`.
+5. Pushed `53b5a18`. Result: tests 264 passed, smoke passed, lint and rules passed. Migration jobs failed because my script could not import `app`. Fixed, pushed `b3306cd`: all 6 jobs green.
+6. No application defect was found by execution. Recorded in `TEST_RECORDS.md` Run 4.
+7. Not done by design (scope freeze): invitations, password reset, shared rate limit store, paging adoption.
+
+Stop point: awaiting further instructions.

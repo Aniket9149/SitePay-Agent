@@ -58,3 +58,25 @@ Command: `python scripts/check_project_rules.py .`
 Result: `Scanned 99 files, found 0 violations.` An earlier run in the same session reported 1 violation (a test file of 315 lines, limit 300). It was fixed by splitting the file.
 
 Not run: the 15 integration tests (3 of them cover the rate limiting routes), and everything listed under Run 2.
+
+## Run 4: 2026-11-22, first execution in a real environment (GitHub Actions)
+
+Environment: GitHub Actions `ubuntu-latest`, Python 3.12.16, full dependency set from `pip install -e ".[dev]"`, PostgreSQL 16 service container for one job.
+Commit under test: `b3306cd` on `sp-01/architect-foundation`. CI run id for that commit: 6 jobs, all `success`. This sandbox still cannot install FastAPI or SQLAlchemy, so these results come from CI, read with the GitHub REST API (job ids 137167288618 to 137167288802).
+
+| Job | Result (copied from the job log) |
+|---|---|
+| tests (`SITEPAY_REQUIRE_FULL_STACK=1`, a missing package fails instead of skipping) | `264 passed, 1 warning in 4.27s`, 0 skipped. This includes all 15 integration tests. |
+| lint (`ruff check .`, ruff 0.16.x) | passed |
+| rules (`scripts/check_project_rules.py .`) | passed |
+| smoke (`scripts/smoke_test_backend.py`) | real uvicorn server on a SQLite file: 14 checks passed (health, readiness, security headers, register 201, duplicate 409, invalid email 422, login, `/auth/me`, no token 401, **restart then login works**, 3 wrong passwords then 429 with Retry-After, lock holds for the right password) |
+| migrations (sqlite) | `upgrade head`, audit log refuses UPDATE, audit log refuses DELETE, `downgrade base` removes all tables, second `upgrade head` works |
+| migrations (postgresql 16) | the same 5 checks, all passed, so the PostgreSQL trigger SQL has now executed |
+
+The 1 warning is `StarletteDeprecationWarning: Using httpx with starlette.testclient is deprecated; install httpx2 instead.` It comes from the pinned test client, not from our code. Not acted on.
+
+Defects found by execution: none in application code. The only failures were in my own tooling: (1) ruff reported 147 findings on `38b40f2`, which stopped the old single-job CI before the tests ran (fixed in `53b5a18`: ruff FastAPI config, line length, typing, import order); (2) `scripts/check_migrations.py` could not import `app` (fixed in `b3306cd`). Because no application defect appeared, no application regression test was added. The new scripts and the strict mode are themselves the regression guard.
+
+Local sandbox, same commit: `python -m pytest tests backend/tests` gives 249 passed and 15 skipped (the integration tests skip without FastAPI). Rule checker: 101 files, 0 violations. `ruff check .`: all checks passed (ruff is installed here as a binary).
+
+Not run: Docker Compose, concurrent requests, more than one server process, load, the roadmap's independent review.

@@ -1,6 +1,6 @@
 # Uploading SitePay Agent to GitHub
 
-Status on 2026-11-21: **uploaded.** Branch `sp-01/architect-foundation` is on GitHub (`Aniket9149/SitePay-Agent`). This file is kept for anyone setting up another copy.
+Status on 2026-11-22: **uploaded and executed in CI.** Branch `sp-01/architect-foundation` is on GitHub (`Aniket9149/SitePay-Agent`). This file is kept for anyone setting up another copy.
 Never paste tokens or passwords into a chat. Use the steps below on your own computer, where Git asks you to sign in itself.
 
 ## Option A: from the ZIP (works today)

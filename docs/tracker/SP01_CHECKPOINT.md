@@ -4,16 +4,13 @@ Written 2026-11-20. Read this first when resuming.
 
 ## State in one paragraph
 
-Phase 0 and Phase 1 are fully written (99 files), plus login and registration rate limiting. 249 tests pass here. The 15 integration tests need FastAPI,
-SQLAlchemy and httpx and have never run, so the Phase 1 exit check is **not met**. The work is on GitHub, branch `sp-01/architect-foundation`.
+Phase 0 and Phase 1 are written (101 files, plus login and registration rate limiting). On 2026-11-22 the code ran for the first time in GitHub Actions: 264 tests pass including all 15 integration tests, the real server smoke test passes, and the migration runs up and down on SQLite and PostgreSQL 16. Remote head `b3306cd` on `sp-01/architect-foundation`. Scope is frozen: nothing new has been added.
 
 ## Resume here, in this order
 
-1. **Keep pushing** to branch `sp-01/architect-foundation` after each batch (never to `main`, never force). The repository had no `main` when first pushed, so GitHub made this branch the default. Create `main` deliberately, through the owner, when merging.
-2. **Run the integration tests** in any environment that can install `pip install -e ".[dev]"`. Fix what they find. Watch the savepoint
-   risk listed in `DEVELOPMENT_TRACKER.md`. Then run `alembic upgrade head` and `downgrade base`, and `ruff check .`.
-3. **Then continue building** in this order: adopt the paging envelope in the list routes, organisation invitations, password reset behind its flag,
-   a shared store for rate limits (database or Redis) so limits hold across several server processes.
+1. **Keep pushing** to `sp-01/architect-foundation` only (never `main`, never force). Read CI results with `gh api repos/Aniket9149/SitePay-Agent/actions/runs`.
+2. Remaining Phase 1 gaps: concurrency and multi-process behaviour, a shared rate limit store, Docker Compose run, independent review.
+3. Only when the owner lifts the scope freeze: adopt the paging envelope in list routes, organisation invitations, password reset behind its flag.
 
 ## Do NOT repeat
 
@@ -28,6 +25,9 @@ SQLAlchemy and httpx and have never run, so the Phase 1 exit check is **not met*
 ```
 python scripts/check_project_rules.py .
 python -m pytest tests backend/tests -rs
+ruff check .
+python scripts/check_migrations.py   # needs DATABASE_URL
+python scripts/smoke_test_backend.py
 ```
 
 ## Open questions for the owner
