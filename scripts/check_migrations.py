@@ -13,6 +13,8 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+# migrations/env.py imports "app", which lives in backend/.
+sys.path.insert(0, str(ROOT / "backend"))
 EXPECTED_TABLES = {
     "organizations", "users", "memberships", "refresh_tokens", "projects", "sites", "audit_logs",
 }
