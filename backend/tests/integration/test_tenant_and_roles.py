@@ -3,18 +3,17 @@
 
 from __future__ import annotations
 
-import pytest
+from typing import TYPE_CHECKING, Any
 
-pytest.importorskip("fastapi")
-pytest.importorskip("sqlalchemy")
-pytest.importorskip("httpx")
+from conftest import auth_headers, register_user
 
-from conftest import auth_headers, register_user  # noqa: E402
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 API = "/api/v1/organizations"
 
 
-def create_project(client, registration, name="Tower A"):  # type: ignore[no-untyped-def]
+def create_project(client: TestClient, registration: dict[str, Any], name: str = "Tower A") -> Any:  # noqa: ANN401 - the HTTP response object
     """Create a project as the registered owner and return the response.
 
     Keeps the tests short.
@@ -27,7 +26,7 @@ def create_project(client, registration, name="Tower A"):  # type: ignore[no-unt
     )
 
 
-def test_project_create_read_update_with_exact_money(client) -> None:  # type: ignore[no-untyped-def]
+def test_project_create_read_update_with_exact_money(client: TestClient) -> None:
     """Contract value round trips exactly and updates change only the sent fields."""
     owner = register_user(client, "owner@example.com")
     organization_id = owner["organization"]["id"]
@@ -55,7 +54,7 @@ def test_project_create_read_update_with_exact_money(client) -> None:  # type: i
     assert bad_dates.status_code == 422
 
 
-def test_another_company_cannot_see_or_touch_a_project(client) -> None:  # type: ignore[no-untyped-def]
+def test_another_company_cannot_see_or_touch_a_project(client: TestClient) -> None:
     """Tenant separation: every cross-company access is "not found"."""
     company_a = register_user(client, "a@example.com", "Company A")
     company_b = register_user(client, "b@example.com", "Company B")
@@ -65,20 +64,23 @@ def test_another_company_cannot_see_or_touch_a_project(client) -> None:  # type:
     assert client.get(f"{API}/{a_org}/projects", headers=auth_headers(company_b)).status_code == 404
     assert client.get(f"{API}/{a_org}", headers=auth_headers(company_b)).status_code == 404
     assert (
-        client.get(f"{API}/{b_org}/projects/{project_id}", headers=auth_headers(company_b)).status_code
+        client.get(
+            f"{API}/{b_org}/projects/{project_id}", headers=auth_headers(company_b)
+        ).status_code
         == 404
     )
     assert client.get(f"{API}/{b_org}/projects", headers=auth_headers(company_b)).json() == []
     assert (
         client.patch(
-            f"{API}/{b_org}/projects/{project_id}", json={"name": "Hijack"},
+            f"{API}/{b_org}/projects/{project_id}",
+            json={"name": "Hijack"},
             headers=auth_headers(company_b),
         ).status_code
         == 404
     )
 
 
-def test_roles_limit_what_members_can_do(client) -> None:  # type: ignore[no-untyped-def]
+def test_roles_limit_what_members_can_do(client: TestClient) -> None:
     """A worker can read but not create. An engineer can add sites but not projects."""
     owner = register_user(client, "owner@example.com")
     worker = register_user(client, "worker@example.com", "Worker Own Company")
@@ -99,10 +101,16 @@ def test_roles_limit_what_members_can_do(client) -> None:  # type: ignore[no-unt
         == 200
     )
     site_url = f"{API}/{organization_id}/projects/{project_id}/sites"
-    assert client.post(site_url, json={"name": "Block 1"}, headers=auth_headers(worker)).status_code == 403
+    assert (
+        client.post(site_url, json={"name": "Block 1"}, headers=auth_headers(worker)).status_code
+        == 403
+    )
     engineer_site = client.post(site_url, json={"name": "Block 1"}, headers=auth_headers(engineer))
     assert engineer_site.status_code == 201
-    assert client.post(site_url, json={"name": "Block 1"}, headers=auth_headers(engineer)).status_code == 409
+    assert (
+        client.post(site_url, json={"name": "Block 1"}, headers=auth_headers(engineer)).status_code
+        == 409
+    )
     assert (
         client.post(
             f"{API}/{organization_id}/members",
@@ -113,7 +121,7 @@ def test_roles_limit_what_members_can_do(client) -> None:  # type: ignore[no-unt
     )
 
 
-def test_last_owner_cannot_be_demoted_or_removed(client) -> None:  # type: ignore[no-untyped-def]
+def test_last_owner_cannot_be_demoted_or_removed(client: TestClient) -> None:
     """An organization always keeps at least one owner."""
     owner = register_user(client, "owner@example.com")
     organization_id = owner["organization"]["id"]
@@ -121,7 +129,8 @@ def test_last_owner_cannot_be_demoted_or_removed(client) -> None:  # type: ignor
     membership_id = members[0]["membership_id"]
     demote = client.patch(
         f"{API}/{organization_id}/members/{membership_id}",
-        json={"role": "worker"}, headers=auth_headers(owner),
+        json={"role": "worker"},
+        headers=auth_headers(owner),
     )
     assert demote.status_code == 422
     remove = client.delete(
@@ -130,14 +139,15 @@ def test_last_owner_cannot_be_demoted_or_removed(client) -> None:  # type: ignor
     assert remove.status_code == 422
 
 
-def test_site_of_another_project_or_company_is_not_found(client) -> None:  # type: ignore[no-untyped-def]
+def test_site_of_another_project_or_company_is_not_found(client: TestClient) -> None:
     """Sites are only reachable through their own project and organization."""
     company_a = register_user(client, "a@example.com", "Company A")
     company_b = register_user(client, "b@example.com", "Company B")
     a_org, b_org = company_a["organization"]["id"], company_b["organization"]["id"]
     project_id = create_project(client, company_a).json()["id"]
     site = client.post(
-        f"{API}/{a_org}/projects/{project_id}/sites", json={"name": "Block 1"},
+        f"{API}/{a_org}/projects/{project_id}/sites",
+        json={"name": "Block 1"},
         headers=auth_headers(company_a),
     ).json()
     cross = client.get(

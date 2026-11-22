@@ -125,7 +125,9 @@ def test_keys_are_independent_and_reset_works() -> None:
     tracker.reset("never-seen")
 
 
-@pytest.mark.parametrize("field", ["maximum_events", "window_seconds", "lockout_seconds", "maximum_tracked_keys"])
+@pytest.mark.parametrize(
+    "field", ["maximum_events", "window_seconds", "lockout_seconds", "maximum_tracked_keys"]
+)
 def test_tracker_rejects_non_positive_limits(field: str) -> None:
     """Zero or negative limits are a programming error."""
     for bad_value in (0, -1):
@@ -254,7 +256,10 @@ def test_locked_and_unlocked_attempts_look_the_same_for_unknown_emails() -> None
     fail_times(throttle, "real@example.com", "1.1.1.1", 3)
     with pytest.raises(RateLimitedError) as real:
         throttle.ensure_allowed("real@example.com", "1.1.1.1")
-    assert unknown.value.to_response_body()["error"]["message"] == real.value.to_response_body()["error"]["message"]
+    assert (
+        unknown.value.to_response_body()["error"]["message"]
+        == real.value.to_response_body()["error"]["message"]
+    )
 
 
 def test_registration_allows_the_limit_then_blocks_and_recovers() -> None:

@@ -115,7 +115,9 @@ def test_unknown_feature_flag_is_an_error() -> None:
 
 def test_json_log_formatter_outputs_valid_json() -> None:
     """Each log line is a JSON object with the expected keys."""
-    record = logging.LogRecord("sitepay.test", logging.WARNING, "f.py", 1, "hello %s", ("world",), None)
+    record = logging.LogRecord(
+        "sitepay.test", logging.WARNING, "f.py", 1, "hello %s", ("world",), None
+    )
     parsed = json.loads(JsonLogFormatter().format(record))
     assert parsed["message"] == "hello world"
     assert parsed["level"] == "WARNING"

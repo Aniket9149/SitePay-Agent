@@ -44,18 +44,34 @@ def test_compose_database_url_matches_the_supported_driver() -> None:
     compose = load_yaml("docker-compose.yml")
     database_url = compose["services"]["backend"]["environment"]["DATABASE_URL"]
     assert database_url.startswith("postgresql+psycopg://")
-    dependencies = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text())["project"]["dependencies"]
+    dependencies = tomllib.loads((PROJECT_ROOT / "pyproject.toml").read_text())["project"][
+        "dependencies"
+    ]
     assert any(dependency.startswith("psycopg") for dependency in dependencies)
 
 
-def test_ci_workflow_runs_rules_lint_and_tests() -> None:
-    """The continuous integration job runs every required check."""
+def test_ci_workflow_runs_every_required_check_in_independent_jobs() -> None:
+    """Rules, lint, tests, the server smoke test and the migrations run as separate jobs."""
     workflow = load_yaml(".github/workflows/continuous_integration.yml")
-    steps = workflow["jobs"]["checks"]["steps"]
-    commands = " ".join(step.get("run", "") for step in steps)
-    assert "scripts/check_project_rules.py" in commands
-    assert "ruff check" in commands
-    assert "pytest" in commands
+    jobs = workflow["jobs"]
+    assert set(jobs) == {"rules", "lint", "tests", "smoke", "migrations"}
+    for job in jobs.values():
+        assert "needs" not in job, "a failing job must not hide the result of another"
+
+    def commands(job_name: str) -> str:
+        """Join the shell commands of one job so a test can search them.
+
+        Steps that only use an action have no command.
+        """
+        return " ".join(step.get("run", "") for step in jobs[job_name]["steps"])
+
+    assert "scripts/check_project_rules.py" in commands("rules")
+    assert "ruff check" in commands("lint")
+    assert "pytest" in commands("tests")
+    assert "scripts/smoke_test_backend.py" in commands("smoke")
+    assert "scripts/check_migrations.py" in commands("migrations")
+    assert jobs["tests"]["env"]["SITEPAY_REQUIRE_FULL_STACK"] == "1"
+    assert jobs["migrations"]["strategy"]["matrix"]["database"] == ["sqlite", "postgresql"]
 
 
 def test_pyproject_has_required_runtime_dependencies() -> None:

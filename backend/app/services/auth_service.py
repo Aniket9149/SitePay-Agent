@@ -141,7 +141,9 @@ def authenticate_user(session: Session, email: str, password: str) -> User:
     return user
 
 
-def login_user(session: Session, payload: LoginRequest, settings: Settings) -> tuple[User, TokenPair]:
+def login_user(
+    session: Session, payload: LoginRequest, settings: Settings
+) -> tuple[User, TokenPair]:
     """Log a user in, issue tokens, and write a login audit record per organisation.
 
     Returns the user and the new token pair.
@@ -237,7 +239,9 @@ def get_active_user(session: Session, user_id: str) -> User:
     return user
 
 
-def list_user_organizations(session: Session, user_id: str) -> list[tuple[Organization, Membership]]:
+def list_user_organizations(
+    session: Session, user_id: str
+) -> list[tuple[Organization, Membership]]:
     """Return every organisation the user belongs to, with their membership.
 
     Ordered by organisation name for a stable display.

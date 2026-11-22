@@ -10,7 +10,7 @@ later change, with a version note in docs/interface_contracts.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel, Field
 
@@ -35,7 +35,7 @@ class PageRequest(BaseModel):
         return self.limit + 1
 
 
-class Page(BaseModel, Generic[ItemType]):
+class Page[ItemType](BaseModel):
     """One page of results with what the client needs to ask for the next."""
 
     items: list[ItemType]
@@ -45,7 +45,7 @@ class Page(BaseModel, Generic[ItemType]):
     next_offset: int | None
 
 
-def build_page(fetched_rows: Sequence[ItemType], request: PageRequest) -> Page[ItemType]:
+def build_page[ItemType](fetched_rows: Sequence[ItemType], request: PageRequest) -> Page[ItemType]:
     """Turn rows fetched with fetch_limit into a Page.
 
     Drops the extra row and sets has_more and next_offset.

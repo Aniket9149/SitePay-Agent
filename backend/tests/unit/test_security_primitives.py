@@ -66,8 +66,16 @@ def test_hashing_rejects_empty_and_overlong(bad_password: str) -> None:
 
 @pytest.mark.parametrize(
     "malformed",
-    ["", "plain", "scrypt$1$2$3", "scrypt$abc$8$1$AAAA$AAAA", "bcrypt$16384$8$1$AAAA$AAAA",
-     "scrypt$3$8$1$AAAA$AAAA", "scrypt$2147483648$8$1$AAAA$AAAA", "scrypt$32768$8$1$!!!!$AAAA"],
+    [
+        "",
+        "plain",
+        "scrypt$1$2$3",
+        "scrypt$abc$8$1$AAAA$AAAA",
+        "bcrypt$16384$8$1$AAAA$AAAA",
+        "scrypt$3$8$1$AAAA$AAAA",
+        "scrypt$2147483648$8$1$AAAA$AAAA",
+        "scrypt$32768$8$1$!!!!$AAAA",
+    ],
 )
 def test_malformed_hashes_fail_without_raising(malformed: str) -> None:
     """A corrupted or tampered stored hash verifies as False, never crashes."""
@@ -132,7 +140,9 @@ def test_wrong_secret_and_tampering_are_rejected() -> None:
     with pytest.raises(AuthenticationError):
         decode_token(token, "o" * 40, ACCESS_TOKEN_TYPE)
     with pytest.raises(AuthenticationError):
-        decode_token(token[:-3] + ("AAA" if not token.endswith("AAA") else "BBB"), SECRET, ACCESS_TOKEN_TYPE)
+        decode_token(
+            token[:-3] + ("AAA" if not token.endswith("AAA") else "BBB"), SECRET, ACCESS_TOKEN_TYPE
+        )
 
 
 def test_token_type_confusion_is_rejected() -> None:

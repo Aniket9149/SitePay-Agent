@@ -18,13 +18,27 @@ APP_ROOT = BACKEND_ROOT / "app"
 MIGRATION_PATH = BACKEND_ROOT / "migrations" / "versions" / "0001_create_core_and_audit_tables.py"
 COMMON_COLUMNS = {"id", "created_at", "updated_at"}
 FRAMEWORK_FREE_MODULES = [
-    "errors.py", "config.py", "logging_setup.py", "feature_flags.py", "database_triggers.py",
-    "security/password_hasher.py", "security/token_service.py", "security/permissions.py",
-    "security/audit_hash.py", "security/attempt_tracker.py", "security/login_throttle.py",
-    "security/client_address.py", "schemas/auth_schema.py", "schemas/organization_schema.py",
-    "schemas/project_schema.py", "contracts/__init__.py", "contracts/entity_references.py",
-    "contracts/review_states.py", "contracts/audit_actions.py",
-    "contracts/quantities_and_money.py", "contracts/pagination.py",
+    "errors.py",
+    "config.py",
+    "logging_setup.py",
+    "feature_flags.py",
+    "database_triggers.py",
+    "security/password_hasher.py",
+    "security/token_service.py",
+    "security/permissions.py",
+    "security/audit_hash.py",
+    "security/attempt_tracker.py",
+    "security/login_throttle.py",
+    "security/client_address.py",
+    "schemas/auth_schema.py",
+    "schemas/organization_schema.py",
+    "schemas/project_schema.py",
+    "contracts/__init__.py",
+    "contracts/entity_references.py",
+    "contracts/review_states.py",
+    "contracts/audit_actions.py",
+    "contracts/quantities_and_money.py",
+    "contracts/pagination.py",
 ]
 FORBIDDEN_IN_FRAMEWORK_FREE = {"sqlalchemy", "fastapi", "alembic", "starlette"}
 
@@ -34,9 +48,7 @@ def backend_python_files() -> list[Path]:
 
     Cache folders are skipped.
     """
-    return sorted(
-        path for path in BACKEND_ROOT.rglob("*.py") if "__pycache__" not in path.parts
-    )
+    return sorted(path for path in BACKEND_ROOT.rglob("*.py") if "__pycache__" not in path.parts)
 
 
 def parse(path: Path) -> ast.Module:
@@ -81,7 +93,9 @@ def model_tables() -> dict[str, set[str]]:
                     and isinstance(statement.value, ast.Constant)
                 ):
                     table_name = str(statement.value.value)
-                elif isinstance(statement, ast.AnnAssign) and isinstance(statement.target, ast.Name):
+                elif isinstance(statement, ast.AnnAssign) and isinstance(
+                    statement.target, ast.Name
+                ):
                     columns.add(statement.target.id)
             if table_name is not None:
                 base_names = {base.id for base in node.bases if isinstance(base, ast.Name)}
@@ -121,7 +135,9 @@ def migration_tables() -> dict[str, set[str]]:
     return tables
 
 
-@pytest.mark.parametrize("path", backend_python_files(), ids=lambda p: str(p.relative_to(PROJECT_ROOT)))
+@pytest.mark.parametrize(
+    "path", backend_python_files(), ids=lambda p: str(p.relative_to(PROJECT_ROOT))
+)
 def test_every_backend_file_compiles(path: Path) -> None:
     """Every backend file is valid Python for this interpreter."""
     compile(path.read_text(encoding="utf-8"), str(path), "exec")
@@ -149,9 +165,19 @@ def test_every_app_function_has_docstring_and_type_hints() -> None:
 def test_models_match_migration_tables_and_columns() -> None:
     """Every model table exists in the migration with exactly the same columns."""
     models, migration = model_tables(), migration_tables()
-    assert set(models) == set(migration) == {
-        "users", "organizations", "memberships", "projects", "sites", "refresh_tokens", "audit_logs",
-    }
+    assert (
+        set(models)
+        == set(migration)
+        == {
+            "users",
+            "organizations",
+            "memberships",
+            "projects",
+            "sites",
+            "refresh_tokens",
+            "audit_logs",
+        }
+    )
     for table_name, model_columns in models.items():
         assert model_columns == migration[table_name], table_name
 
@@ -173,7 +199,9 @@ def test_literal_constraint_and_index_names_appear_in_migration() -> None:
 def test_framework_free_modules_do_not_import_frameworks() -> None:
     """Pure modules stay testable anywhere because they import no web or database framework."""
     offenders = {
-        relative: sorted(imported_top_level_names(parse(APP_ROOT / relative)) & FORBIDDEN_IN_FRAMEWORK_FREE)
+        relative: sorted(
+            imported_top_level_names(parse(APP_ROOT / relative)) & FORBIDDEN_IN_FRAMEWORK_FREE
+        )
         for relative in FRAMEWORK_FREE_MODULES
     }
     assert {name: found for name, found in offenders.items() if found} == {}
@@ -187,7 +215,9 @@ def test_services_do_not_import_the_web_framework() -> None:
 
 def test_money_code_never_uses_float() -> None:
     """Rule F2: no floating point type is used for money in models or project formats."""
-    watched = list((APP_ROOT / "models").glob("*.py")) + [APP_ROOT / "schemas" / "project_schema.py"]
+    watched = list((APP_ROOT / "models").glob("*.py")) + [
+        APP_ROOT / "schemas" / "project_schema.py"
+    ]
     for path in watched:
         names = {node.id for node in ast.walk(parse(path)) if isinstance(node, ast.Name)}
         assert "float" not in names, path.name

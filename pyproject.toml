@@ -41,6 +41,20 @@ addopts = "-q"
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+# "app" lives in backend/, and the tests import the helper modules in scripts/ and tests.
+src = ["backend", "scripts", "."]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "B", "UP", "ANN"]
+
+[tool.ruff.lint.per-file-ignores]
+# Integration tests must check that the web and database packages exist before importing them.
+"backend/tests/integration/*" = ["E402"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI reads dependencies from argument defaults. This is its documented idiom, not a mistake.
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "app.dependencies.require_permission",
+]

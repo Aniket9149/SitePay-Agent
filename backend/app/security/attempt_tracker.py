@@ -118,7 +118,8 @@ class AttemptTracker:
     def _enforce_capacity(self, now: float) -> None:
         """Keep the number of remembered keys at or under the cap.
 
-        Forgets idle keys first, then the oldest unlocked keys, and locked keys only as a last resort.
+        Forgets idle keys first, then the oldest unlocked keys, and locked keys only as a
+        last resort.
         """
         if len(self._states) <= self._maximum_tracked_keys:
             return

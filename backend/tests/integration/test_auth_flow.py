@@ -3,16 +3,17 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
+from conftest import auth_headers, register_user
 
-pytest.importorskip("fastapi")
-pytest.importorskip("sqlalchemy")
-pytest.importorskip("httpx")
-
-from conftest import auth_headers, register_user  # noqa: E402
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
+    from sqlalchemy.orm import Session, sessionmaker
 
 
-def test_register_login_me_logout_flow(client) -> None:  # type: ignore[no-untyped-def]
+def test_register_login_me_logout_flow(client: TestClient) -> None:
     """A new user registers, logs in, reads their profile and logs out."""
     registration = register_user(client, "owner@example.com")
     assert registration["organization"]["role"] == "owner"
@@ -24,7 +25,9 @@ def test_register_login_me_logout_flow(client) -> None:  # type: ignore[no-untyp
     assert login.status_code == 200
     tokens = login.json()
 
-    me = client.get("/api/v1/auth/me", headers={"Authorization": "Bearer " + tokens["access_token"]})
+    me = client.get(
+        "/api/v1/auth/me", headers={"Authorization": "Bearer " + tokens["access_token"]}
+    )
     assert me.status_code == 200
     assert me.json()["user"]["email"] == "owner@example.com"
     assert len(me.json()["organizations"]) == 1
@@ -35,7 +38,7 @@ def test_register_login_me_logout_flow(client) -> None:  # type: ignore[no-untyp
     assert again.status_code == 401
 
 
-def test_wrong_password_and_unknown_email_give_the_same_error(client) -> None:  # type: ignore[no-untyped-def]
+def test_wrong_password_and_unknown_email_give_the_same_error(client: TestClient) -> None:
     """Login failures must not reveal whether the email exists."""
     register_user(client, "owner@example.com")
     wrong_password = client.post(
@@ -48,32 +51,44 @@ def test_wrong_password_and_unknown_email_give_the_same_error(client) -> None:  
     assert wrong_password.json() == unknown_email.json()
 
 
-def test_duplicate_email_and_weak_password_are_rejected(client) -> None:  # type: ignore[no-untyped-def]
+def test_duplicate_email_and_weak_password_are_rejected(client: TestClient) -> None:
     """The same email cannot register twice, and weak passwords are refused."""
     register_user(client, "owner@example.com")
     duplicate = client.post(
         "/api/v1/auth/register",
-        json={"email": "Owner@Example.com", "password": "strongpass123", "name": "X",
-              "organization_name": "Y"},
+        json={
+            "email": "Owner@Example.com",
+            "password": "strongpass123",
+            "name": "X",
+            "organization_name": "Y",
+        },
     )
     assert duplicate.status_code == 409
     weak = client.post(
         "/api/v1/auth/register",
-        json={"email": "new@example.com", "password": "short", "name": "X", "organization_name": "Y"},
+        json={
+            "email": "new@example.com",
+            "password": "short",
+            "name": "X",
+            "organization_name": "Y",
+        },
     )
     assert weak.status_code == 422
 
 
-def test_protected_routes_need_a_valid_access_token(client) -> None:  # type: ignore[no-untyped-def]
+def test_protected_routes_need_a_valid_access_token(client: TestClient) -> None:
     """No token, a garbage token and a refresh token are all refused."""
     assert client.get("/api/v1/auth/me").status_code == 401
-    assert client.get("/api/v1/auth/me", headers={"Authorization": "Bearer garbage"}).status_code == 401
+    assert (
+        client.get("/api/v1/auth/me", headers={"Authorization": "Bearer garbage"}).status_code
+        == 401
+    )
     registration = register_user(client, "owner@example.com")
     refresh_as_access = {"Authorization": "Bearer " + registration["tokens"]["refresh_token"]}
     assert client.get("/api/v1/auth/me", headers=refresh_as_access).status_code == 401
 
 
-def test_refresh_rotates_and_reuse_revokes_everything(client) -> None:  # type: ignore[no-untyped-def]
+def test_refresh_rotates_and_reuse_revokes_everything(client: TestClient) -> None:
     """Each refresh token works once. Reusing an old one revokes the whole family."""
     registration = register_user(client, "owner@example.com")
     first_refresh = registration["tokens"]["refresh_token"]
@@ -88,7 +103,7 @@ def test_refresh_rotates_and_reuse_revokes_everything(client) -> None:  # type: 
     assert after_theft.status_code == 401
 
 
-def test_health_routes(client) -> None:  # type: ignore[no-untyped-def]
+def test_health_routes(client: TestClient) -> None:
     """Liveness and readiness both answer, and security headers are present."""
     assert client.get("/health").json()["status"] == "ok"
     ready = client.get("/health/ready")
@@ -96,7 +111,9 @@ def test_health_routes(client) -> None:  # type: ignore[no-untyped-def]
     assert ready.headers["x-content-type-options"] == "nosniff"
 
 
-def test_audit_chain_is_intact_and_immutable(client, session_factory) -> None:  # type: ignore[no-untyped-def]
+def test_audit_chain_is_intact_and_immutable(
+    client: TestClient, session_factory: sessionmaker[Session]
+) -> None:
     """Actions create audit records that verify, and the database refuses edits."""
     from sqlalchemy import text
     from sqlalchemy.exc import DatabaseError
@@ -130,7 +147,9 @@ def test_audit_chain_is_intact_and_immutable(client, session_factory) -> None:  
         session.rollback()
 
 
-def test_login_is_locked_after_repeated_failures_even_with_the_right_password(client) -> None:  # type: ignore[no-untyped-def]
+def test_login_is_locked_after_repeated_failures_even_with_the_right_password(
+    client: TestClient,
+) -> None:
     """Five wrong passwords lock the login. Then even the correct password is refused."""
     register_user(client, "owner@example.com")
     wrong = {"email": "owner@example.com", "password": "wrong-password-1"}
@@ -146,20 +165,24 @@ def test_login_is_locked_after_repeated_failures_even_with_the_right_password(cl
     assert correct.status_code == 429
 
 
-def test_registration_is_limited_per_address(client) -> None:  # type: ignore[no-untyped-def]
+def test_registration_is_limited_per_address(client: TestClient) -> None:
     """The eleventh registration from one address in an hour is refused."""
     for number in range(10):
         register_user(client, f"user{number}@example.com", f"Company {number}")
     blocked = client.post(
         "/api/v1/auth/register",
-        json={"email": "user11@example.com", "password": "strongpass123", "name": "X",
-              "organization_name": "Company 11"},
+        json={
+            "email": "user11@example.com",
+            "password": "strongpass123",
+            "name": "X",
+            "organization_name": "Company 11",
+        },
     )
     assert blocked.status_code == 429
 
 
-def test_a_faked_forwarded_header_does_not_dodge_the_limit(client) -> None:  # type: ignore[no-untyped-def]
-    """With no trusted proxy configured, X-Forwarded-For is ignored, so changing it changes nothing."""
+def test_a_faked_forwarded_header_does_not_dodge_the_limit(client: TestClient) -> None:
+    """With no trusted proxy configured, X-Forwarded-For is ignored, so changing it does nothing."""
     register_user(client, "owner@example.com")
     for number in range(5):
         client.post(

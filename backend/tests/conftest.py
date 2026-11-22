@@ -8,14 +8,28 @@ are skipped, never silently passed, when the packages are missing.
 
 from __future__ import annotations
 
+import os
 from collections.abc import Iterator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from app.config import Settings, load_settings
 
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
+    from sqlalchemy.orm import Session, sessionmaker
+
+REQUIRE_FULL_STACK = os.environ.get("SITEPAY_REQUIRE_FULL_STACK") == "1"
 TEST_SECRET_KEY = "test-secret-key-that-is-long-enough-1234567890"
+
+
+def require_package(name: str) -> None:
+    """Import a package or skip, except in CI where a missing package must fail the run."""
+    if REQUIRE_FULL_STACK:
+        __import__(name)
+    else:
+        pytest.importorskip(name)
 
 
 @pytest.fixture()
@@ -34,12 +48,12 @@ def test_settings() -> Settings:
 
 
 @pytest.fixture()
-def session_factory(test_settings: Settings) -> Iterator[Any]:
+def session_factory(test_settings: Settings) -> Iterator[sessionmaker[Session]]:
     """Create an in memory database with all tables and the audit triggers.
 
     Skips the test when SQLAlchemy is not installed.
     """
-    pytest.importorskip("sqlalchemy")
+    require_package("sqlalchemy")
     from app.database import build_engine, build_session_factory
     from app.database_triggers import audit_trigger_statements
     from app.models import Base
@@ -54,13 +68,15 @@ def session_factory(test_settings: Settings) -> Iterator[Any]:
 
 
 @pytest.fixture()
-def client(test_settings: Settings, session_factory: Any) -> Iterator[Any]:
+def client(
+    test_settings: Settings, session_factory: sessionmaker[Session]
+) -> Iterator[TestClient]:
     """A test client for the full application on the in memory database.
 
     Skips the test when FastAPI or httpx is not installed.
     """
-    pytest.importorskip("fastapi")
-    pytest.importorskip("httpx")
+    require_package("fastapi")
+    require_package("httpx")
     from fastapi.testclient import TestClient
 
     from app.main import create_application
@@ -70,7 +86,9 @@ def client(test_settings: Settings, session_factory: Any) -> Iterator[Any]:
         yield test_client
 
 
-def register_user(client: Any, email: str, organization_name: str = "Test Builders") -> dict[str, Any]:
+def register_user(
+    client: TestClient, email: str, organization_name: str = "Test Builders"
+) -> dict[str, Any]:
     """Register a user through the API and return the response body.
 
     Fails the test immediately if registration does not succeed.

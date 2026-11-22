@@ -65,7 +65,15 @@ def test_reference_round_trip_and_normalisation() -> None:
 
 @pytest.mark.parametrize(
     "bad_text",
-    ["", "project", "project:", ":" + SAMPLE_ID, "project:not-a-uuid", "planet:" + SAMPLE_ID, "project:1"],
+    [
+        "",
+        "project",
+        "project:",
+        ":" + SAMPLE_ID,
+        "project:not-a-uuid",
+        "planet:" + SAMPLE_ID,
+        "project:1",
+    ],
 )
 def test_bad_reference_text_is_rejected(bad_text: str) -> None:
     """Malformed text, unknown kinds and guessable ids are all refused."""
@@ -85,7 +93,10 @@ def test_normal_review_path_is_allowed() -> None:
     """A person can take a record from draft through review to approved."""
     check_transition(ReviewState.DRAFT, ReviewState.IN_REVIEW, actor_type=ActorType.AGENT)
     check_transition(
-        ReviewState.IN_REVIEW, ReviewState.APPROVED, actor_type=ActorType.HUMAN, actor_role=Role.ENGINEER
+        ReviewState.IN_REVIEW,
+        ReviewState.APPROVED,
+        actor_type=ActorType.HUMAN,
+        actor_role=Role.ENGINEER,
     )
     check_transition(ReviewState.APPROVED, ReviewState.SUPERSEDED, actor_type=ActorType.SYSTEM)
 
@@ -120,12 +131,18 @@ def test_rejection_needs_a_reason() -> None:
     for reason in (None, "", "   "):
         with pytest.raises(DomainValidationError):
             check_transition(
-                ReviewState.IN_REVIEW, ReviewState.REJECTED,
-                actor_type=ActorType.HUMAN, actor_role=Role.MANAGER, reason=reason,
+                ReviewState.IN_REVIEW,
+                ReviewState.REJECTED,
+                actor_type=ActorType.HUMAN,
+                actor_role=Role.MANAGER,
+                reason=reason,
             )
     check_transition(
-        ReviewState.IN_REVIEW, ReviewState.REJECTED,
-        actor_type=ActorType.HUMAN, actor_role=Role.MANAGER, reason="Measurement missing",
+        ReviewState.IN_REVIEW,
+        ReviewState.REJECTED,
+        actor_type=ActorType.HUMAN,
+        actor_role=Role.MANAGER,
+        reason="Measurement missing",
     )
 
 
@@ -145,20 +162,37 @@ def test_draft_cannot_jump_to_approved_and_final_states() -> None:
     """Approval cannot skip review, and final states are identified."""
     with pytest.raises(DomainValidationError):
         check_transition(
-            ReviewState.DRAFT, ReviewState.APPROVED, actor_type=ActorType.HUMAN, actor_role=Role.OWNER
+            ReviewState.DRAFT,
+            ReviewState.APPROVED,
+            actor_type=ActorType.HUMAN,
+            actor_role=Role.OWNER,
         )
     assert is_final(ReviewState.APPROVED) and is_final(ReviewState.SUPERSEDED)
     assert not is_final(ReviewState.DRAFT) and not is_final(ReviewState.REJECTED)
 
 
-@pytest.mark.parametrize("action", ["project.created", "claim.draft_created", "evidence.uploaded", "review.state_changed"])
+@pytest.mark.parametrize(
+    "action",
+    ["project.created", "claim.draft_created", "evidence.uploaded", "review.state_changed"],
+)
 def test_valid_audit_actions_pass(action: str) -> None:
     """Well formed actions in registered namespaces are accepted."""
     ensure_valid_audit_action(action)
 
 
 @pytest.mark.parametrize(
-    "action", ["", "project", "Project.created", "project.Created", "project.created.twice", "planet.visited", "a" * 90 + ".b", "project.", ".created"]
+    "action",
+    [
+        "",
+        "project",
+        "Project.created",
+        "project.Created",
+        "project.created.twice",
+        "planet.visited",
+        "a" * 90 + ".b",
+        "project.",
+        ".created",
+    ],
 )
 def test_invalid_audit_actions_fail(action: str) -> None:
     """Malformed actions and unregistered namespaces are refused."""
@@ -199,7 +233,16 @@ def test_quantity_requires_unit_and_keeps_exact_amount() -> None:
 
 @pytest.mark.parametrize(
     "amount,unit",
-    [(0.1, "sqm"), (True, "sqm"), ("abc", "sqm"), ("NaN", "sqm"), ("Infinity", "kg"), ("5", "feet"), ("5", ""), (None, "sqm")],
+    [
+        (0.1, "sqm"),
+        (True, "sqm"),
+        ("abc", "sqm"),
+        ("NaN", "sqm"),
+        ("Infinity", "kg"),
+        ("5", "feet"),
+        ("5", ""),
+        (None, "sqm"),
+    ],
 )
 def test_bad_quantities_are_rejected(amount: object, unit: str) -> None:
     """Floats, booleans, non-numbers, non-finite values and unknown units fail."""

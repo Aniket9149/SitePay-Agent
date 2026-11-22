@@ -27,7 +27,9 @@ def report_liveness() -> dict[str, str]:
 
 
 @router.get("/health/ready", response_model=None)
-def report_readiness(session: Session = Depends(get_database_session)) -> JSONResponse | dict[str, str]:
+def report_readiness(
+    session: Session = Depends(get_database_session),
+) -> JSONResponse | dict[str, str]:
     """Report whether the database answers a simple query.
 
     Returns status 503 when it does not, so load balancers stop sending traffic.

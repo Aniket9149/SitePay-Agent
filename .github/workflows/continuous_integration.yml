@@ -1,14 +1,25 @@
 #Owner::ANIKET::ANHOTRA = MR.Panda
-# Runs the rule checker, lint and every test on each push and pull request.
-# The AI regression gate is added in Phase 3 as its own workflow.
+# Independent jobs, so a lint failure can never hide a test result (and the reverse).
+# The CI database password below belongs to a throwaway container that exists only for the job.
 name: continuous-integration
 
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
-  checks:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Project rules (owner tag, em dash, file length)
+        run: python scripts/check_project_rules.py .
+
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,9 +28,63 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: pip install -e ".[dev]"
-      - name: Project rules (owner tag, em dash, file length)
-        run: python scripts/check_project_rules.py .
       - name: Lint
         run: ruff check .
-      - name: Tests
-        run: python -m pytest tests backend/tests -rs
+
+  tests:
+    runs-on: ubuntu-latest
+    env:
+      SITEPAY_REQUIRE_FULL_STACK: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+      - name: Tests (a missing package fails the run instead of skipping)
+        run: python -m pytest tests backend/tests -rsfE --tb=short
+
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+      - name: Start the real server, use it over HTTP, restart it, check persistence
+        run: python scripts/smoke_test_backend.py
+
+  migrations:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, postgresql]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: sitepay
+          POSTGRES_USER: sitepay
+          POSTGRES_PASSWORD: sitepay_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sitepay -d sitepay"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: ${{ matrix.database == 'sqlite' && 'sqlite:////tmp/sitepay_migrations.sqlite3' || 'postgresql+psycopg://sitepay:sitepay_ci_only@localhost:5432/sitepay' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+      - name: Migrate up, check the audit triggers, migrate down, migrate up again
+        run: python scripts/check_migrations.py

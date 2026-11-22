@@ -38,8 +38,8 @@ def _build_entry(
     action: str,
     target_type: str,
     target_id: str | None,
-    value_before: Any,
-    value_after: Any,
+    value_before: Any,  # noqa: ANN401 - any JSON value
+    value_after: Any,  # noqa: ANN401 - any JSON value
     reason: str | None,
 ) -> AuditLogEntry:
     """Create the next chained entry for a scope, not yet saved.
@@ -82,8 +82,8 @@ def record_audit_event(
     target_id: str | None = None,
     actor_user_id: str | None = None,
     organization_id: str | None = None,
-    value_before: Any = None,
-    value_after: Any = None,
+    value_before: Any = None,  # noqa: ANN401 - any JSON value
+    value_after: Any = None,  # noqa: ANN401 - any JSON value
     reason: str | None = None,
 ) -> AuditLogEntry:
     """Append one audit entry to the chain of the organisation, or the platform chain.

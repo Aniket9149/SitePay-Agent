@@ -23,7 +23,9 @@ class Membership(IdentifiedTimestampedModel):
         Index("ix_memberships_organization_id", "organization_id"),
     )
 
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
     organization_id: Mapped[str] = mapped_column(
         ForeignKey("organizations.id", ondelete="RESTRICT"), nullable=False
     )

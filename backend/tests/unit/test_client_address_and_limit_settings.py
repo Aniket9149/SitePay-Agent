@@ -26,7 +26,9 @@ from app.security.client_address import UNKNOWN_ADDRESS, extract_client_address
         (None, "1.2.3.4", 1, "1.2.3.4"),
     ],
 )
-def test_client_address_extraction(peer: str | None, header: str | None, count: int, expected: str) -> None:
+def test_client_address_extraction(
+    peer: str | None, header: str | None, count: int, expected: str
+) -> None:
     """The header is ignored unless proxies are trusted, and a faked first entry is never used."""
     assert extract_client_address(peer, header, count) == expected
 
@@ -46,8 +48,10 @@ def test_new_settings_have_safe_defaults_and_are_validated() -> None:
     assert (settings.registration_max_per_hour, settings.trusted_proxy_count) == (10, 0)
     assert load_settings({**base, "TRUSTED_PROXY_COUNT": "2"}).trusted_proxy_count == 2
     for name, bad_value in (
-        ("LOGIN_MAX_FAILURES", "0"), ("LOGIN_LOCKOUT_SECONDS", "-5"),
-        ("REGISTRATION_MAX_PER_HOUR", "x"), ("TRUSTED_PROXY_COUNT", "-1"),
+        ("LOGIN_MAX_FAILURES", "0"),
+        ("LOGIN_LOCKOUT_SECONDS", "-5"),
+        ("REGISTRATION_MAX_PER_HOUR", "x"),
+        ("TRUSTED_PROXY_COUNT", "-1"),
     ):
         with pytest.raises(ConfigurationError):
             load_settings({**base, name: bad_value})

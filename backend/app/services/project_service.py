@@ -22,7 +22,7 @@ PROJECT_AUDIT_FIELDS = (
 SITE_AUDIT_FIELDS = ("name", "location_description")
 
 
-def _snapshot(record: Any, field_names: tuple[str, ...]) -> dict[str, Any]:
+def _snapshot(record: Project | Site, field_names: tuple[str, ...]) -> dict[str, Any]:
     """Copy the named fields of a record into a dict for the audit log.
 
     Values are made JSON safe by the audit service.

@@ -76,7 +76,9 @@ def test_member_add_rejects_unknown_role() -> None:
 
 def test_project_money_is_exact_decimal() -> None:
     """Contract value parses to Decimal exactly, from text or integer."""
-    assert ProjectCreate(name="Tower", contract_value="1250000.50").contract_value == Decimal("1250000.50")  # type: ignore[arg-type]
+    assert ProjectCreate(name="Tower", contract_value="1250000.50").contract_value == Decimal(
+        "1250000.50"
+    )  # type: ignore[arg-type]
     assert ProjectCreate(name="Tower", contract_value=5000).contract_value == Decimal("5000")  # type: ignore[arg-type]
 
 

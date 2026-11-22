@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 import check_project_rules as checker
 
 OWNER_TAG = "#Owner::ANIKET::ANHOTRA = MR.Panda"
@@ -132,14 +134,16 @@ def test_multiple_rules_on_one_file_are_all_reported(tmp_path: Path) -> None:
     assert sorted(rule_names(checker.scan_project(tmp_path))) == ["em-dash", "owner-tag"]
 
 
-def test_main_returns_zero_when_clean(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+def test_main_returns_zero_when_clean(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """The command line exits with 0 and reports the scanned count."""
     write_file(tmp_path, "good.py", OWNER_TAG + "\n")
     assert checker.main([str(tmp_path)]) == 0
     assert "found 0 violations" in capsys.readouterr().out
 
 
-def test_main_returns_one_when_violations_exist(tmp_path: Path, capsys) -> None:  # type: ignore[no-untyped-def]
+def test_main_returns_one_when_violations_exist(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     """The command line exits with 1 and prints each violation."""
     write_file(tmp_path, "bad.py", "x = 1\n")
     assert checker.main([str(tmp_path)]) == 1

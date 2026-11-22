@@ -18,7 +18,9 @@ class RefreshToken(Base):
     __table_args__ = (Index("ix_refresh_tokens_user_id", "user_id"),)
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
     created_at: Mapped[datetime] = mapped_column(
         UtcDateTime(), nullable=False, default=current_utc_time
     )

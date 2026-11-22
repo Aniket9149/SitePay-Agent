@@ -50,7 +50,9 @@ class AuditLogEntry(Base):
 
 
 @event.listens_for(AuditLogEntry, "before_update")
-def block_audit_entry_update(mapper: Mapper[Any], connection: Connection, target: Any) -> None:
+def block_audit_entry_update(
+    mapper: Mapper[Any], connection: Connection, target: AuditLogEntry
+) -> None:
     """Refuse any attempt to modify an audit entry through the ORM.
 
     The database triggers block it again at a lower level.
@@ -59,7 +61,9 @@ def block_audit_entry_update(mapper: Mapper[Any], connection: Connection, target
 
 
 @event.listens_for(AuditLogEntry, "before_delete")
-def block_audit_entry_delete(mapper: Mapper[Any], connection: Connection, target: Any) -> None:
+def block_audit_entry_delete(
+    mapper: Mapper[Any], connection: Connection, target: AuditLogEntry
+) -> None:
     """Refuse any attempt to delete an audit entry through the ORM.
 
     The database triggers block it again at a lower level.

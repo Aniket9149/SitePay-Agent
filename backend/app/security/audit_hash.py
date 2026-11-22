@@ -41,7 +41,7 @@ def canonical_timestamp(moment: datetime) -> str:
     return utc_moment.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
-def make_json_safe(value: Any) -> Any:
+def make_json_safe(value: Any) -> Any:  # noqa: ANN401 - arbitrary JSON in, JSON out
     """Convert a value into plain JSON types without losing exact amounts.
 
     Decimals become text, dates become ISO text and enums become their values.

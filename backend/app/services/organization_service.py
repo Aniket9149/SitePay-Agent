@@ -16,7 +16,9 @@ from app.security.permissions import Role, would_leave_organization_without_owne
 from app.services.audit_service import record_audit_event
 
 
-def create_organization(session: Session, creator: User, payload: OrganizationCreate) -> Organization:
+def create_organization(
+    session: Session, creator: User, payload: OrganizationCreate
+) -> Organization:
     """Create an organisation and make the creator its owner, with audit records.
 
     The creator can then add other members.
